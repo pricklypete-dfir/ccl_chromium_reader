@@ -619,9 +619,7 @@ class Deserializer:
     def _read_header(self) -> int:
         tag = self._read_tag()
         if tag != Constants.token_kVersion:
-            #raise ValueError("Didn't get version tag in the header")
-            print(f"Warning: Skipping record due to missing version tag")
-            return None
+            raise ValueError("Didn't get version tag in the header")
         version = self._read_le_varint()[0]
         return version
 
