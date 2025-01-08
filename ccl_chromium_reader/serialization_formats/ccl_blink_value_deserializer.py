@@ -165,6 +165,7 @@ class Constants:
     tag_kVersionTag = b"\xff"  # version:uint32_t -> Uses this as the file version.
     tag_kTrailerOffsetTag = b"\xfe" # offset:uint64_t (fixed width, network order) from buffer, start size:uint32_t (fixed width, network order)
     tag_kTrailerRequiresInterfacesTag = b"\xA0"
+    tag_kCustomTag86 = b"\x86"  # Placeholder for unknown tag (NEW VERSION OF CHROMIUM?)
 
 
 class V8CryptoKeySubType(enum.IntEnum):
@@ -339,10 +340,22 @@ class BlinkV8Deserializer:
     def _not_implemented(self, stream):
         raise NotImplementedError()
 
+    def _read_custom_tag86(self, stream: typing.BinaryIO):
+        try:
+            # Example logic for debugging raw bytes
+            length = self._read_varint(stream)  # Read variable-length integer
+            data = stream.read(length)         # Read raw data of specified length
+            print(f"DEBUG: Parsed custom tag b'\\x86' - Length: {length}, Data: {data}")
+            return data  # Return parsed data
+        except Exception as e:
+            print(f"ERROR: Failed to parse custom tag b'\\x86': {e}")
+            return None  # Return None on failure
+
     def read(self, stream: typing.BinaryIO) -> typing.Any:
         tag = stream.read(1)
 
         func = {
+            Constants.tag_kCustomTag86: lambda x: self._read_custom_tag86(x),
             Constants.tag_kMessagePortTag: lambda x: self._not_implemented(x),
             Constants.tag_kMojoHandleTag: lambda x: self._not_implemented(x),
             Constants.tag_kBlobTag: lambda x: self._not_implemented(x),
