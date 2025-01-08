@@ -619,11 +619,13 @@ class Deserializer:
     def _read_header(self) -> int:
         tag = self._read_tag()
         if tag != Constants.token_kVersion:
-            #raise ValueError("Didn't get version tag in the header")
-            print(f"Warning: Skipping record due to missing version tag")
-            return None
+            # Debugging with safe access to _position
+            if hasattr(self, "_position"):
+                print(f"DEBUG: Version tag issue at position {self._position}, tag={tag}")
+            else:
+                print(f"DEBUG: Version tag issue, tag={tag}")
+            return None  # Skip problematic record
         version = self._read_le_varint()[0]
         return version
-
     def read(self) -> typing.Any:
         return self._read_object()
