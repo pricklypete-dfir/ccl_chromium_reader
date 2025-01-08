@@ -188,7 +188,10 @@ class Constants:
     # A list of (subtag: ErrorTag, [subtag dependent data]). See ErrorTag for
     # details.
     token_kError = b"r"
-
+    token_kCustomTag86 = b'\x86'  
+    # New custom tag for handling unknown data (possible new format version as of 2025-01-07; mrpeters2003@gmail.com)
+    token_kCustomTag02 = b'\x02'  
+    # New custom tag for handling unknown data (possible new format version as of 2025-01-07; mrpeters2003@gmail.com)
     # The following tags are reserved because they were in use in Chromium before
     # the token_kHostObject tag was introduced in format version 13, at
     #   v8           refs/heads/master@{#43466}
@@ -557,6 +560,35 @@ class Deserializer:
     def _not_implemented(self):
         raise NotImplementedError("Todo")
 
+    def _read_custom_tag86(self) -> typing.Any:
+    #
+    # Custom handler for tag b'\x86'.
+    # This handler reads raw data and logs it for debugging.
+    #
+        try:
+            length = self._read_le_varint()[0]  # Read length
+            data = self._read_raw(length)       # Read raw bytes
+            print(f"DEBUG: Custom tag b'\\x86' - Length: {length}, Data: {data[:20]!r}")  # Logs first 20 bytes
+            return data  # Return raw data for now
+        except Exception as e:
+            print(f"ERROR: Failed to process custom tag b'\\x86': {e}")
+            return None  # Skip problematic tag gracefully
+
+    def _read_custom_tag02(self) -> typing.Any:
+    #
+    # Custom handler for tag b'\x86'.
+    # This handler reads raw data and logs it for debugging.
+    #
+        try:
+            length = self._read_le_varint()[0]  # Read length
+            data = self._read_raw(length)       # Read raw bytes
+            print(f"DEBUG: Custom tag b'\\x02' - Length: {length}, Data: {data[:20]!r}")  # Logs first 20 bytes
+            return data  # Return raw data for now
+        except Exception as e:
+            print(f"ERROR: Failed to process custom tag b'\\x02': {e}")
+            return None  # Skip problematic tag gracefully
+
+    
     def _read_object_internal(self) -> typing.Tuple[bytes, typing.Any]:
         tag = self._read_tag()
 
@@ -594,10 +626,16 @@ class Deserializer:
             Constants.token_kWasmModuleTransfer: self._not_implemented,
             Constants.token_kWasmMemoryTransfer: self._not_implemented,
             Constants.token_kHostObject: self._read_host_object,
+            Constants.token_kCustomTag86: self._read_custom_tag86,  # New handler
+            Constants.token_kCustomTag02: self._read_custom_tag02,  # New handler
         }.get(tag)
 
         if func is None:
-            raise ValueError(f"Unknown tag {tag}")
+            # Log unknown tags and skip gracefully
+            print(f"DEBUG: Skipping unknown tag {tag} at position {self._f.tell()}")
+            self._f.seek(1, 1)  # Move forward by 1 byte
+            return tag, None  # Skip tag
+
 
         value = func()
 
